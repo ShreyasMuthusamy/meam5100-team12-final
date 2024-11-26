@@ -1,5 +1,7 @@
 #include "html510.h"
 #include "vive510.h"
+#include "commands.h"
+#include "robot.h"
 #include "webpage.h"
 
 #define PI 3.141592
@@ -11,12 +13,7 @@
 #define MOTOR_R_DIR 10
 #define ENC_L_PIN 1
 #define ENC_R_PIN 4
-
-// Motor LEDC values and PID frame rate
-#define MOTOR_RES_BITS 12
-#define MOTOR_RES ((1 << MOTOR_RES_BITS) - 1)
-#define MOTOR_FREQ 100
-#define FRAME_RATE 50
+#define SERVO_PIN 3
 
 // Define PID values
 #define KPL 5
@@ -49,69 +46,8 @@ struct Trajectory {
   float Dx; float Dy;
 };
 
-///////////////////////////////////////////
-// States, setpoints, and pose estimation
-//
-long leftEncoderCounts, rightEncoderCounts;
-byte leftFwd, rightFwd;
-int vLeft, vRight, vLeftG = 0, vRightG = 0;
+Robot robot(MOTOR_L_PWM, MOTOR_L_DIR, ENC_L_PIN, MOTOR_R_PWM, MOTOR_R_DIR, ENC_R_PIN, SERVO_PIN);
 
-// Setup the motors
-void setupMotors() {
-  ledcAttach(MOTOR_L_PWM, MOTOR_FREQ, MOTOR_RES_BITS);
-  ledcAttach(MOTOR_R_PWM, MOTOR_FREQ, MOTOR_RES_BITS);
-  pinMode(MOTOR_L_DIR, OUTPUT);
-  pinMode(MOTOR_R_DIR, OUTPUT);
-}
-
-// Interrupts to count the number of times the photointerrupter was interrupted
-void IRAM_ATTR handleLeftEncoderInterrupt() {
-  if (leftFwd) {
-    leftEncoderCounts++;
-  } else {
-    leftEncoderCounts--;
-  }
-}
-
-void IRAM_ATTR handleRightEncoderInterrupt() {
-  if (rightFwd) {
-    rightEncoderCounts++;
-  } else {
-    rightEncoderCounts--;
-  }
-}
-
-// Setup the encoders with INPUT_PULLUP and to use the interrupts defined above
-void setupEncoders() {
-  pinMode(ENC_L_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_L_PIN), handleLeftEncoderInterrupt, RISING);
-  pinMode(ENC_R_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_R_PIN), handleRightEncoderInterrupt, RISING);
-}
-
-// Update the "pose" information of the robot (not actual pose, but the values on which PID is done)
-void updatePose() {
-  static long prevLeftEncoderCounts = leftEncoderCounts;
-  static long prevRightEncoderCounts = rightEncoderCounts;
-
-  vLeft = leftEncoderCounts - prevLeftEncoderCounts;
-  vRight = rightEncoderCounts - prevRightEncoderCounts;
-
-  prevLeftEncoderCounts = leftEncoderCounts;
-  prevRightEncoderCounts = rightEncoderCounts;
-}
-
-// Drive the left and right motors
-void driveMotors(int left, int right) {
-  leftFwd = left > 0;       // Set the variable that will control the positive or negative increment of the encoders
-  digitalWrite(MOTOR_L_DIR, leftFwd);   // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
-  ledcWrite(MOTOR_L_PWM, map(abs(left), 0, 100, 0, MOTOR_RES));   // Map the duty cycle percentage to the motor resolution
-
-  rightFwd = right > 0;
-  digitalWrite(MOTOR_R_DIR, rightFwd);
-  ledcWrite(MOTOR_R_PWM, map(abs(right), 0, 100, 0, MOTOR_RES));
-}
-//
 ///////////////////////////////////////////
 // WiFi Methods
 //
@@ -121,9 +57,6 @@ const char* passwd = "";
 
 // Instantiate the WiFi server
 HTML510Server server(80);
-
-// Joystick coordinates
-int joyCoords[2];
 
 // Root handler
 void handleRoot() {
@@ -224,9 +157,7 @@ void setup() {
   server.attachHandler("/", handleRoot);
   server.attachHandler("/command=", handleCommand);
 
-  // Setup pins for output and input
-  setupMotors();
-  setupEncoders();
+  robot.init();
 }
 
 void loop() {
@@ -234,10 +165,7 @@ void loop() {
   static unsigned long millisLast = millis();
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
-    // Update pose every frame
-    updatePose();
-    // Drive the motors using the new pose information
-    driveMotors(solvePIDleft(vLeft, vLeftG), solvePIDright(vRight, vRightG));
+    robot.update();
   }
   server.serve();
 }
