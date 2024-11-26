@@ -10,30 +10,30 @@
 
 class Command {
   private:
-    String _name;
-    int _priority;
-    Robot* _robot;
+    String name;
+    int priority;
+    Robot* robot;
   
   public:
-    Command(String name, int priority, Robot* robot): _name(name), _priority(priority), _robot(robot) {}
+    Command(String _name, int _priority, Robot* _robot): name(_name), priority(_priority), robot(_robot) {}
 
     void initialize();
     void execute();
     bool finished();
     void stop();
 
-    String getName() { return _name; }
-    int getPriority() { return _priority; }
+    String getName() { return name; }
+    int getPriority() { return priority; }
 };
 
 class Scheduler {
   private:
-    Robot* _robot;
+    Robot* robot;
     std::vector<Command> commands;
     int numImmediate = 0, numAuto = 0;
   
   public:
-    Scheduler(Robot* robot): _robot(robot) {}
+    Scheduler(Robot* _robot): robot(_robot) {}
     void schedule(Command command);
     void schedule(String command);
     bool update();

@@ -27,22 +27,6 @@
 // Units: encoder counts per frame
 #define MAX_SPEED 30
 
-#define BEZIER_DISTANCE 10
-
-// Define structs
-struct Pose {
-  float x;
-  float y;
-  float theta;
-};
-
-struct Trajectory {
-  float Ax; float Ay;
-  float Bx; float By;
-  float Cx; float Cy;
-  float Dx; float Dy;
-};
-
 Robot robot(MOTOR_L_PWM, MOTOR_L_DIR, ENC_L_PIN, MOTOR_R_PWM, MOTOR_R_DIR, ENC_R_PIN, SERVO_PIN);
 Scheduler scheduler(&robot);
 
@@ -77,31 +61,6 @@ void setupWiFi() {
   Serial.print("AP IP address: HTML//");
   Serial.println(WiFi.softAPIP());
   server.begin();
-}
-//
-///////////////////////////////////////////
-// Trajectory Generation and Following Methods
-//
-Trajectory generateTrajectory(Pose p0, Pose p3) {
-  Trajectory res;
-
-  // Calculate first control point
-  Pose p1;
-  p1.x = p0.x + BEZIER_DISTANCE * cos(p0.theta);
-  p1.y = p0.y + BEZIER_DISTANCE * sin(p0.theta);
-
-  // Calculate second control point
-  Pose p2;
-  p2.x = p3.x - BEZIER_DISTANCE * cos(p3.theta);
-  p2.y = p3.y - BEZIER_DISTANCE * sin(p3.theta);
-
-  // Calculate the coefficients of the Bezier cubic spline
-  res.Ax = -p0.x + 3*p1.x - 3*p2.x + p3.x; res.Ay = -p0.y + 3*p1.y - 3*p2.y + p3.y;
-  res.Bx = 3*p0.x - 6*p1.x + 3*p2.x; res.By = 3*p0.y - 6*p1.y + 3*p2.y;
-  res.Cx = -3*p0.x + 3*p1.x; res.Cy = -3*p0.y + 3*p1.y;
-  res.Dx = p0.x; res.Dy = p0.y;
-
-  return res;
 }
 //
 ///////////////////////////////////////////

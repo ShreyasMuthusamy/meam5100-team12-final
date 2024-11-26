@@ -29,7 +29,7 @@ class Robot {
     static void IRAM_ATTR handleLeftEncoderInterrupt();
     static void IRAM_ATTR handleRightEncoderInterrupt();
 
-    int kP, kI, kD;
+    float kP, kI, kD;
     // int kPL, kIL, kDL;
     // int kPR, kIR, kDR;
     int vLeft, vRight;
@@ -46,10 +46,9 @@ class Robot {
       rightMotorPWM(PWMR), rightMotorDir(DIRR), rightEncoderPin(ENCR),
       servoPin(servo) { robot = this; }
     void init();
+    void setPID(float newKP, float newKI, float newKD) { kP = newKP; kI = newKI; kD = newKD; }
     void update();
     void drive(int left, int right);
-
-    void setPID(int newKP, int newKI, int newKD) { kP = newKP; kI = newKI; kD = newKD; }
 };
 
 #endif ROBOT_H_
