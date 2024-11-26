@@ -27,7 +27,10 @@ class Robot {
     int kP, kI, kD;
     // int kPL, kIL, kDL;
     // int kPR, kIR, kDR;
-    int vLeftGoal, vRightGoal;
+    int vLeft, vRight;
+
+    int solvePIDLeft(int current, int setpoint);
+    int solvePIDRight(int current, int setpoint);
 
     void setupMotors();
     void setupEncoders();

@@ -21,6 +21,46 @@ void Robot::setupEncoders() {
   attachInterrupt(digitalPinToInterrupt(rightEncoderPin), handleRightEncoderInterrupt, RISING);
 }
 
+int Robot::solvePIDLeft(int current, int setpoint) {
+  // Proportional error
+  int err = setpoint - current;
+  
+  // Integral error
+  static float errIL = 0.0;
+  errIL += (float) err / FRAME_RATE;
+  errIL = constrain(errIL, -MAX_ERR_I/KIL, MAX_ERR_I/KIL);
+  
+  // Derivative error
+  static int oldValL;
+  int errD = (current - oldValL) * FRAME_RATE;
+
+  // Calculate PID control action
+  int u = kP * err + kI * errIL - kD * errD;
+
+  oldValL = current;
+  return constrain(u, -100, 100); // Maximum of 100% (or -100%) duty cycle
+}
+
+int Robot::solvePIDRight(int current, int setpoint) {
+  // Proportional error
+  int err = setpoint - current;
+
+  // Integral error
+  static float errIR = 0.0;
+  errIR += (float) err / FRAME_RATE;
+  errIR = constrain(errIR, -MAX_ERR_I/KIR, MAX_ERR_I/KIR);
+  
+  // Derivative error
+  static int oldValR;
+  int errD = (current - oldValR) * FRAME_RATE;
+  
+  // Calculate PID control action
+  int u = kP * err + kI * errIR - kD * errD;
+
+  oldValR = current;
+  return constrain(u, -100, 100); // Maximum of 100% (or -100%) duty cycle
+}
+
 // Initialize the robot and setup motors, encoders, and sensors
 void Robot::init() {
   setupMotors();
@@ -33,11 +73,13 @@ void Robot::update() {
 }
 
 void Robot::drive(int left, int right) {
-  leftFwd = left > 0;       // Set the variable that will control the positive or negative increment of the encoders
-  digitalWrite(MOTOR_L_DIR, leftFwd);   // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
-  ledcWrite(MOTOR_L_PWM, map(abs(left), 0, 100, 0, MOTOR_RES));   // Map the duty cycle percentage to the motor resolution
+  int uLeft = solvePIDLeft(vLeft, left);  // Solve PID to get control input
+  leftFwd = uLeft > 0;      // Set the variable that will control the positive or negative increment of the encoders
+  digitalWrite(leftMotorDir, leftFwd);    // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
+  ledcWrite(leftMotorPWM, map(abs(uLeft), 0, 100, 0, MOTOR_RES));   // Map the duty cycle percentage to the motor resolution
 
-  rightFwd = right > 0;
-  digitalWrite(MOTOR_R_DIR, rightFwd);
-  ledcWrite(MOTOR_R_PWM, map(abs(right), 0, 100, 0, MOTOR_RES));
+  int uRight = solvePIDRight(vRight, right);
+  rightFwd = uRight > 0;
+  digitalWrite(rightMotorDir, rightFwd);
+  ledcWrite(rightMotorPWM, map(abs(uRight), 0, 100, 0, MOTOR_RES));
 }

@@ -105,48 +105,6 @@ Trajectory generateTrajectory(Pose p0, Pose p3) {
 
   return res;
 }
-///////////////////////////////////////////
-// Feedback and Motor Control Methods
-//
-int solvePIDleft(int current, int setpoint) {
-  // Proportional error
-  int err = setpoint - current;
-  
-  // Integral error
-  static float errIL = 0.0;
-  errIL += (float) err / FRAME_RATE;
-  errIL = constrain(errIL, -MAX_ERR_I/KIL, MAX_ERR_I/KIL);
-  
-  // Derivative error
-  static int oldValL;
-  int errD = (current - oldValL) * FRAME_RATE;
-
-  // Calculate PID control action
-  int u = KPL * err + KIL * errIL - KDL * errD;
-
-  oldValL = current;
-  return constrain(u, -100, 100); // Maximum of 100% (or -100%) duty cycle
-}
-
-int solvePIDright(int current, int setpoint) {
-  // Proportional error
-  int err = setpoint - current;
-
-  // Integral error
-  static float errIR = 0.0;
-  errIR += (float) err / FRAME_RATE;
-  errIR = constrain(errIR, -MAX_ERR_I/KIR, MAX_ERR_I/KIR);
-  
-  // Derivative error
-  static int oldValR;
-  int errD = (current - oldValR) * FRAME_RATE;
-  
-  // Calculate PID control action
-  int u = KPR * err + KIR * errIR - KDR * errD;
-
-  oldValR = current;
-  return constrain(u, -100, 100); // Maximum of 100% (or -100%) duty cycle
-}
 //
 ///////////////////////////////////////////
 void setup() {
@@ -166,6 +124,7 @@ void loop() {
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
     robot.update();
+    robot.drive(0, 0);
   }
   server.serve();
 }
