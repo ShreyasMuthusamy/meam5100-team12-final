@@ -2,8 +2,8 @@
 
 // Need this code for interrupts to work in OOP setting
 Robot* Robot::robot = nullptr;
-void IRAM_ATTR Robot::handleLeftEncoderInterrupt() { if (Robot::robot) { Robot::robot->updateLeftEncoder(); } }
-void IRAM_ATTR Robot::handleRightEncoderInterrupt() { if (Robot::robot) { Robot::robot->updateRightEncoder(); } }
+void IRAM_ATTR Robot::handleLeftEncoderInterrupt() { if (robot) { robot->updateLeftEncoder(); } }
+void IRAM_ATTR Robot::handleRightEncoderInterrupt() { if (robot) { robot->updateRightEncoder(); } }
 
 // Setup the motors using the ledc and digital pinMode functions
 void Robot::setupMotors() {
@@ -28,7 +28,7 @@ int Robot::solvePIDLeft(int current, int setpoint) {
   // Integral error
   static float errIL = 0.0;
   errIL += (float) err / FRAME_RATE;
-  errIL = constrain(errIL, -MAX_ERR_I/KIL, MAX_ERR_I/KIL);
+  errIL = constrain(errIL, -MAX_ERR_I/kI, MAX_ERR_I/kI);
   
   // Derivative error
   static int oldValL;
@@ -48,7 +48,7 @@ int Robot::solvePIDRight(int current, int setpoint) {
   // Integral error
   static float errIR = 0.0;
   errIR += (float) err / FRAME_RATE;
-  errIR = constrain(errIR, -MAX_ERR_I/KIR, MAX_ERR_I/KIR);
+  errIR = constrain(errIR, -MAX_ERR_I/kI, MAX_ERR_I/kI);
   
   // Derivative error
   static int oldValR;

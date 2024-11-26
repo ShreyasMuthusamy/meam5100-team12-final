@@ -1,7 +1,7 @@
 #include "html510.h"
 #include "vive510.h"
-#include "commands.h"
 #include "robot.h"
+#include "commands.h"
 #include "webpage.h"
 
 #define PI 3.141592
@@ -22,9 +22,6 @@
 #define KPR 5
 #define KIR 0.5
 #define KDR 0.1
-
-// Set a cap on the maximum integral error
-#define MAX_ERR_I 60
 
 // Set a cap on the maximum speed of the robot (for better robot control)
 // Units: encoder counts per frame
@@ -47,6 +44,7 @@ struct Trajectory {
 };
 
 Robot robot(MOTOR_L_PWM, MOTOR_L_DIR, ENC_L_PIN, MOTOR_R_PWM, MOTOR_R_DIR, ENC_R_PIN, SERVO_PIN);
+Scheduler scheduler(&robot);
 
 ///////////////////////////////////////////
 // WiFi Methods
@@ -68,7 +66,7 @@ void handleRoot() {
 void handleCommand() {
   // Get the command from the web server and schedule it
   String command = server.getText();
-  // scheduler.schedule(command);
+  scheduler.schedule(command);
   server.sendplain("");
 }
 
@@ -116,6 +114,7 @@ void setup() {
   server.attachHandler("/command=", handleCommand);
 
   robot.init();
+  robot.setPID(KPL, KIL, KDL);
 }
 
 void loop() {

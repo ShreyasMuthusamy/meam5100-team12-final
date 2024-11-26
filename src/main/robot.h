@@ -1,11 +1,16 @@
 #ifndef ROBOT_H_
 #define ROBOT_H_
 
+#include <arduino.h>
+
 // Motor LEDC values and PID frame rate
 #define MOTOR_RES_BITS 12
 #define MOTOR_RES ((1 << MOTOR_RES_BITS) - 1)
 #define MOTOR_FREQ 100
 #define FRAME_RATE 50
+
+// Set a cap on the maximum integral error
+#define MAX_ERR_I 60
 
 class Robot {
   private:

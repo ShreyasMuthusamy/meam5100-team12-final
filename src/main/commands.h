@@ -1,39 +1,43 @@
 #ifndef COMMANDS_H_
 #define COMMANDS_H_
 
-#define MAX_COMMANDS 10
+#include <arduino.h>
+#include "robot.h"
+
+#define IMMEDIATE 0
+#define AUTO 1
+#define TELEOP 2
 
 class Command {
   private:
     String _name;
     int _priority;
+    Robot* _robot;
   
   public:
-    Command(String name, int priority): _name(name), _priority(priority) {}
+    Command(String name, int priority, Robot* robot): _name(name), _priority(priority), _robot(robot) {}
 
     void initialize();
     void execute();
     bool finished();
     void stop();
 
-    String getName() {
-      return _name;
-    }
-    int getPriority() {
-      return _priority;
-    }
+    String getName() { return _name; }
+    int getPriority() { return _priority; }
 };
 
 class Scheduler {
   private:
-    Command scheduledCommands[MAX_COMMANDS];
-    int scheduledPriorities[MAX_COMMANDS];
-    int numScheduled;
+    Robot* _robot;
+    std::vector<Command> commands;
+    int numImmediate = 0, numAuto = 0;
   
   public:
-    Scheduler();
+    Scheduler(Robot* robot): _robot(robot) {}
     void schedule(Command command);
-    Command getCurrentCommand();
+    void schedule(String command);
+    bool update();
+    Command getCurrentCommand() { return commands.front(); }
 };
 
 #endif COMMANDS_H_
