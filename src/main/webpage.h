@@ -73,9 +73,11 @@ const char body[] PROGMEM = R"===(
       }
 
       function handleCommand(command) {
-        clearButtons();
-        document.getElementById(command.concat("Button")).classList.add("active");
-        sendCommand(command);
+        if (!document.getElementById(command.concat("Button")).classList.contains("active")) {
+          clearButtons();
+          document.getElementById(command.concat("Button")).classList.add("active");
+          sendCommand(command);
+        }
       }
 
       function sendCommand(command) {

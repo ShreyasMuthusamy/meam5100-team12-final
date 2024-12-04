@@ -4,8 +4,6 @@
 #include "commands.h"
 #include "webpage.h"
 
-#define PI 3.141592
-
 // Define the pins corresponding to the motors and encoders
 #define MOTOR_L_PWM 5
 #define MOTOR_L_DIR 18
@@ -13,6 +11,14 @@
 #define MOTOR_R_DIR 10
 #define ENC_L_PIN 1
 #define ENC_R_PIN 4
+#define IR_L_ADD 0x30
+#define IR_F_ADD 0x31
+#define IR_R_ADD 0x32
+#define IR_L_SHUT 0
+#define IR_F_SHUT 1
+#define IR_R_SHUT 2
+#define VIVE_L_PIN 12
+#define VIVE_R_PIN 13
 #define SERVO_PIN 3
 
 // Define PID values
@@ -27,7 +33,13 @@
 // Units: encoder counts per frame
 #define MAX_SPEED 30
 
-Robot robot(MOTOR_L_PWM, MOTOR_L_DIR, ENC_L_PIN, MOTOR_R_PWM, MOTOR_R_DIR, ENC_R_PIN, SERVO_PIN);
+Robot robot(
+  MOTOR_L_PWM, MOTOR_L_DIR, ENC_L_PIN,
+  MOTOR_R_PWM, MOTOR_R_DIR, ENC_R_PIN,
+  IR_L_ADD, IR_F_ADD, IR_R_ADD,
+  IR_L_SHUT, IR_F_SHUT, IR_R_SHUT,
+  VIVE_L_PIN, VIVE_R_PIN, SERVO_PIN
+);
 Scheduler scheduler(&robot);
 
 ///////////////////////////////////////////
@@ -50,7 +62,7 @@ void handleRoot() {
 void handleCommand() {
   // Get the command from the web server and schedule it
   String command = server.getText();
-  scheduler.schedule(command);
+  scheduler.schedule(command, &robot);
   server.sendplain("");
 }
 
@@ -81,8 +93,8 @@ void loop() {
   static unsigned long millisLast = millis();
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
-    robot.update();
     robot.drive(0, 0);
   }
+  scheduler.run();
   server.serve();
 }
