@@ -11,21 +11,21 @@
 #define MOTOR_RES_BITS 12
 #define MOTOR_RES ((1 << MOTOR_RES_BITS) - 1)
 #define MOTOR_FREQ 100
-#define FRAME_RATE 50
+#define FRAME_RATE 40
 
 // SDA and SCL pins for I2C
-#define SDA_PIN 4
-#define SCL_PIN 5
+#define SDA_PIN 41
+#define SCL_PIN 42
 
 // Set a cap on the maximum integral error
-#define MAX_ERR_I 60
+#define MAX_ERR_I 100
 
 class Robot {
   private:
     static Robot* robot;
 
-    int leftMotorPWM, leftMotorDir, leftEncoderPin;
-    int rightMotorPWM, rightMotorDir, rightEncoderPin;
+    int leftMotorPWM, leftMotorDir, leftEncoderA, leftEncoderB;
+    int rightMotorPWM, rightMotorDir, rightEncoderA, rightEncoderB;
     int leftIRAddress, frontIRAddress, rightIRAddress;
     int leftIRShut, frontIRShut, rightIRShut;
     Servo servo;
@@ -39,13 +39,14 @@ class Robot {
     int servoAngle = 0;
     bool leftFwd, rightFwd, servoCW;
     
-    void updateLeftEncoder() { leftEncoderCounts += leftFwd ? 1 : -1; }
-    void updateRightEncoder() { rightEncoderCounts += rightFwd ? 1 : -1; }
+    void updateLeftEncoder() { leftEncoderCounts += digitalRead(leftEncoderB) ? 1 : -1; }
+    void updateRightEncoder() { rightEncoderCounts += !digitalRead(rightEncoderB) ? 1 : -1; }
 
     static void IRAM_ATTR handleLeftEncoderInterrupt();
     static void IRAM_ATTR handleRightEncoderInterrupt();
 
-    float kP, kI, kD;
+    float kPL, kIL, kDL;
+    float kPR, kIR, kDR;
     int vLeft, vRight;
 
     int solvePIDLeft(int current, int setpoint);
@@ -59,14 +60,14 @@ class Robot {
 
   public:
     Robot(
-      int PWML, int DIRL, int ENCL,
-      int PWMR, int DIRR, int ENCR,
+      int PWML, int DIRL, int ENCLA, int ENCLB,
+      int PWMR, int DIRR, int ENCRA, int ENCRB,
       int IRLAdd, int IRFAdd, int IRRAdd,
       int IRLShut, int IRFShut, int IRRShut,
       int viveL, int viveR, int servoPin
     ):
-        leftMotorPWM(PWML), leftMotorDir(DIRL), leftEncoderPin(ENCL),
-        rightMotorPWM(PWMR), rightMotorDir(DIRR), rightEncoderPin(ENCR),
+        leftMotorPWM(PWML), leftMotorDir(DIRL), leftEncoderA(ENCLA), leftEncoderB(ENCLB),
+        rightMotorPWM(PWMR), rightMotorDir(DIRR), rightEncoderA(ENCRA), rightEncoderB(ENCRB),
         leftIRAddress(IRLAdd), frontIRAddress(IRFAdd), rightIRAddress(IRRAdd),
         leftIRShut(IRLShut), frontIRShut(IRFShut), rightIRShut(IRRShut),
         leftVive(viveL), rightVive(viveR)
@@ -75,7 +76,11 @@ class Robot {
       servo.attach(servoPin);
     }
     void init();
-    void setPID(float newKP, float newKI, float newKD) { kP = newKP; kI = newKI; kD = newKD; }
+    void update();
+    void setPID(float newKPL, float newKIL, float newKDL, float newKPR, float newKIR, float newKDR) {
+      kPL = newKPL; kIL = newKIL; kDL = newKDL;
+      kPR = newKPR, kIR = newKIR; kDR = newKDR;
+    }
     Pose getPose();
 
     uint16_t getLeftDistance() { getDistance(leftIR); }
@@ -83,6 +88,7 @@ class Robot {
     uint16_t getFrontDistance() { getDistance(frontIR); }
     
     void drive(int left, int right);
+    void fullSend(int left, int right);
     void sweep();
 };
 

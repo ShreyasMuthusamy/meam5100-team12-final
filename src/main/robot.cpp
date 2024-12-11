@@ -15,10 +15,12 @@ void Robot::setupMotors() {
 
 // Setup the encoders with INPUT_PULLUP and to use the interrupts defined in robot.h
 void Robot::setupEncoders() {
-  pinMode(leftEncoderPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(leftEncoderPin), handleLeftEncoderInterrupt, RISING);
-  pinMode(rightEncoderPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(rightEncoderPin), handleRightEncoderInterrupt, RISING);
+  pinMode(leftEncoderA, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(leftEncoderA), handleLeftEncoderInterrupt, RISING);
+  pinMode(leftEncoderB, INPUT_PULLUP);
+  pinMode(rightEncoderA, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(rightEncoderA), handleRightEncoderInterrupt, RISING);
+  pinMode(rightEncoderB, INPUT_PULLUP);
 }
 
 // Set up the IR sensors (Vive sensors are setup in vive510.cpp)
@@ -40,24 +42,26 @@ void Robot::setupSensors() {
   digitalWrite(leftIRShut, HIGH);
   digitalWrite(frontIRShut, LOW);
   digitalWrite(rightIRShut, LOW);
-  if(!leftIR.begin(leftIRAddress)) {
+  if(!leftIR.begin(leftIRAddress, false, &Wire)) {
     Serial.println(F("Failed to boot left VL53L0X"));
     while(1);
   }
   delay(10);
 
   digitalWrite(frontIRShut, HIGH);
-  if(!frontIR.begin(frontIRAddress)) {
+  if(!frontIR.begin(frontIRAddress, false, &Wire)) {
     Serial.println(F("Failed to boot front VL53L0X"));
     while(1);
   }
   delay(10);
 
   digitalWrite(rightIRShut, HIGH);
-  if(!rightIR.begin(rightIRAddress)) {
+  if(!rightIR.begin(rightIRAddress, false, &Wire)) {
     Serial.println(F("Failed to boot right VL53L0X"));
     while(1);
   }
+
+  Serial.println("Setup sensors (let's gooooo)")
 }
 
 int Robot::solvePIDLeft(int current, int setpoint) {
@@ -67,14 +71,14 @@ int Robot::solvePIDLeft(int current, int setpoint) {
   // Integral error
   static float errIL = 0.0;
   errIL += (float) err / FRAME_RATE;
-  errIL = constrain(errIL, -MAX_ERR_I/kI, MAX_ERR_I/kI);
+  errIL = constrain(errIL, -MAX_ERR_I/kIL, MAX_ERR_I/kIL);
   
   // Derivative error
   static int oldValL;
   int errD = (current - oldValL) * FRAME_RATE;
 
   // Calculate PID control action
-  int u = kP * err + kI * errIL - kD * errD;
+  int u = kPL * err + kIL * errIL - kDL * errD;
 
   oldValL = current;
   return constrain(u, -100, 100); // Maximum of 100% (or -100%) duty cycle
@@ -87,14 +91,14 @@ int Robot::solvePIDRight(int current, int setpoint) {
   // Integral error
   static float errIR = 0.0;
   errIR += (float) err / FRAME_RATE;
-  errIR = constrain(errIR, -MAX_ERR_I/kI, MAX_ERR_I/kI);
+  errIR = constrain(errIR, -MAX_ERR_I/kIR, MAX_ERR_I/kIR);
   
   // Derivative error
   static int oldValR;
   int errD = (current - oldValR) * FRAME_RATE;
   
   // Calculate PID control action
-  int u = kP * err + kI * errIR - kD * errD;
+  int u = kPR * err + kIR * errIR - kDR * errD;
 
   oldValR = current;
   return constrain(u, -100, 100); // Maximum of 100% (or -100%) duty cycle
@@ -113,9 +117,25 @@ uint16_t Robot::getDistance(Adafruit_VL53L0X tof) {
 
 // Initialize the robot and setup motors, encoders, and sensors
 void Robot::init() {
-  setupMotors();
+  Wire.begin(SDA_PIN, SCL_PIN);
+
+  // setupMotors();
   setupEncoders();
   setupSensors();
+}
+
+void Robot::update() {
+  static int prevLeftEncoderCounts = 0;
+  static int prevRightEncoderCounts = 0;
+
+  vLeft = leftEncoderCounts - prevLeftEncoderCounts;
+  vRight = rightEncoderCounts - prevRightEncoderCounts;
+
+  Serial.print("Left Encoder Velocity: "); Serial.print(vLeft);
+  Serial.print("Right Encoder Velocity: "); Serial.println(vRight);
+
+  prevLeftEncoderCounts = leftEncoderCounts;
+  prevRightEncoderCounts = rightEncoderCounts;
 }
 
 Pose Robot::getPose() {
@@ -136,6 +156,16 @@ void Robot::drive(int left, int right) {
   rightFwd = uRight > 0;
   digitalWrite(rightMotorDir, rightFwd);
   ledcWrite(rightMotorPWM, map(abs(uRight), 0, 100, 0, MOTOR_RES));
+}
+
+void Robot::fullSend(int left, int right) {
+  leftFwd = left > 0;      // Set the variable that will control the positive or negative increment of the encoders
+  digitalWrite(leftMotorDir, leftFwd);    // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
+  ledcWrite(leftMotorPWM, map(abs(left), 0, 100, 0, MOTOR_RES));   // Map the duty cycle percentage to the motor resolution
+
+  rightFwd = right > 0;
+  digitalWrite(rightMotorDir, rightFwd);
+  ledcWrite(rightMotorPWM, map(abs(right), 0, 100, 0, MOTOR_RES));
 }
 
 void Robot::sweep() {
