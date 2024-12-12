@@ -1,6 +1,6 @@
 #include "vive510.h"
 
-#define VIVE_PIN 4
+#define VIVE_PIN 39
 
 Vive510 vive(VIVE_PIN);
 

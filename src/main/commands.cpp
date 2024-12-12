@@ -13,9 +13,9 @@ void FollowWall::execute() {
   float y = wallToFollow ? robot->getRightDistance() : robot->getLeftDistance();
 
   float u = kSide * sgn * (y - yd);
-  if (robot->getFrontDistance() < fd) {
-    u += kFront * sgn * (robot->getFrontDistance() - fd);
-  }
+  // if (robot->getFrontDistance() < fd) {
+  //   u += kFront * sgn * (robot->getFrontDistance() - fd);
+  // }
 
   robot->drive(vAvg+u, vAvg-u);
 }
@@ -46,72 +46,4 @@ void AutoAttack::execute() {
 
   float u = 2 * k;
   robot->drive(vAvg+u, vAvg-u);
-}
-
-void Scheduler::schedule(Command* command) {
-  int priority = command->getPriority();
-  auto pos = commands.begin();
-  
-  switch (priority) {
-    case IMMEDIATE:
-      commands.insert(std::next(pos, numImmediate), command);
-      numImmediate++;
-      break;
-    case TELEOP:
-      commands.insert(std::next(pos, numImmediate+numTeleop), command);
-      numTeleop++;
-      break;
-    case AUTO:
-    default:
-      commands.insert(commands.end(), command);
-      break;
-  }
-}
-
-void Scheduler::schedule(String command, Robot* robot) {
-  if (command == "wallFollow") {
-    FollowWall c(robot);
-    schedule(&c);
-  } else if (command == "autoAttackLeft") {
-    AutoAttack c(robot, LEFT_TARG);
-    schedule(&c);
-  } else if (command == "autoAttackCenter") {
-    AutoAttack c(robot, CENTER_TARG);
-    schedule(&c);
-  } else if (command == "autoAttackRight") {
-    AutoAttack c(robot, RIGHT_TARG);
-    schedule(&c);
-  } else if (command == "stop") {
-    EmergencyStop c(robot);
-    schedule(&c);
-  }
-}
-
-void Scheduler::run() {
-  if (!initialized) {
-    commands.front()->initialize();
-    initialized = true;
-    finished = false;
-    return;
-  }
-
-  if (!commands.front()->finished()) {
-    commands.front()->execute();
-    finished = false;
-    return;
-  }
-
-  static unsigned long currTime = millis();
-  if (!finished && commands.front()->finished()) {
-    currTime = millis();
-  }
-
-  if (millis() - currTime > REST_MILLIS) {
-    commands.erase(commands.begin());
-    initialized = false;
-  } else {
-    commands.front()->stop();
-  }
-
-  finished = commands.front()->finished();
 }

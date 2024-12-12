@@ -16,8 +16,6 @@
 #define CENTER_TARG 1
 #define RIGHT_TARG 2
 
-#define REST_MILLIS 1000
-
 class Command {
   protected:
     int priority;
@@ -48,7 +46,7 @@ class FollowWall : public Command {
   private:
     float kSide = 2;
     float kFront = 10;
-    float yd = 10;
+    float yd = 100;
     float fd = 20;
     float vAvg = 20;
     int wallToFollow;
@@ -78,19 +76,16 @@ class AutoAttack : public Command {
     void stop() override { robot->drive(0, 0); }
 };
 
-class Scheduler {
-  private:
-    Robot* robot;
-    std::vector<Command*> commands;
-    int numImmediate = 0, numTeleop = 0;
-    bool initialized = false, finished = false;
-  
-  public:
-    Scheduler(Robot* _robot): robot(_robot) {}
-    void schedule(Command* command);
-    void schedule(String command, Robot* robot);
-    void run();
-    Command* getCurrentCommand() { return commands.front(); }
-};
+String currCommand;
+
+void setCommand(String &command) {
+  currCommand = command;
+}
+
+String getCommand() {
+  return currCommand;
+}
+
+void setControl(String &control) {}
 
 #endif COMMANDS_H_

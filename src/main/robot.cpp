@@ -61,7 +61,7 @@ void Robot::setupSensors() {
     while(1);
   }
 
-  Serial.println("Setup sensors (let's gooooo)")
+  Serial.println("Setup sensors (let's gooooo)");
 }
 
 int Robot::solvePIDLeft(int current, int setpoint) {
@@ -104,7 +104,7 @@ int Robot::solvePIDRight(int current, int setpoint) {
   return constrain(u, -100, 100); // Maximum of 100% (or -100%) duty cycle
 }
 
-uint16_t Robot::getDistance(Adafruit_VL53L0X tof) {
+int Robot::getDistance(Adafruit_VL53L0X &tof) {
   VL53L0X_RangingMeasurementData_t measure;
   tof.rangingTest(&measure, false);
 
@@ -119,7 +119,7 @@ uint16_t Robot::getDistance(Adafruit_VL53L0X tof) {
 void Robot::init() {
   Wire.begin(SDA_PIN, SCL_PIN);
 
-  // setupMotors();
+  setupMotors();
   setupEncoders();
   setupSensors();
 }
@@ -131,40 +131,67 @@ void Robot::update() {
   vLeft = leftEncoderCounts - prevLeftEncoderCounts;
   vRight = rightEncoderCounts - prevRightEncoderCounts;
 
-  Serial.print("Left Encoder Velocity: "); Serial.print(vLeft);
-  Serial.print("Right Encoder Velocity: "); Serial.println(vRight);
+  Serial.printf("Actual Velocity: %d, %d ", vLeft, vRight);
 
   prevLeftEncoderCounts = leftEncoderCounts;
   prevRightEncoderCounts = rightEncoderCounts;
 }
 
 Pose Robot::getPose() {
+  static int leftX, leftY, rightX, rightY;
+
+  leftX += (leftVive.xCoord() - leftX) / 4;
+  leftY += (leftVive.yCoord() - leftY) / 4;
+  rightX += (rightVive.xCoord() - rightX) / 4;
+  rightY += (rightVive.yCoord() - rightY) / 4;
+  
   Pose currPose;
-  currPose.x = (leftVive.xCoord() + rightVive.xCoord()) / 2;
-  currPose.y = (leftVive.yCoord() + rightVive.yCoord()) / 2;
-  currPose.theta = atan2(rightVive.yCoord() - leftVive.yCoord(), rightVive.xCoord() - leftVive.xCoord());
+  currPose.x = (leftX + rightX) / 2;
+  currPose.y = (leftY + rightY) / 2;
+  currPose.theta = atan2(rightY - leftY, rightX - leftX);
   return currPose;
 }
 
+int Robot::getLeftDistance() {
+  static float reading = 0;
+  reading += (getDistance(leftIR) - reading) / 4;
+  return reading;
+}
+
+int Robot::getFrontDistance() {
+  static float reading = 0;
+  reading += (getDistance(frontIR) - reading) / 4;
+  return reading;
+}
+
+int Robot::getRightDistance() {
+  static float reading = 0;
+  reading += (getDistance(rightIR) - reading) / 4;
+  return reading;
+}
+
 void Robot::drive(int left, int right) {
+  left = constrain(left, -40, 40);
+  right = constrain(right, -40, 40);
+
   int uLeft = solvePIDLeft(vLeft, left);  // Solve PID to get control input
   leftFwd = uLeft > 0;      // Set the variable that will control the positive or negative increment of the encoders
-  digitalWrite(leftMotorDir, leftFwd);    // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
+  digitalWrite(leftMotorDir, !leftFwd);    // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
   ledcWrite(leftMotorPWM, map(abs(uLeft), 0, 100, 0, MOTOR_RES));   // Map the duty cycle percentage to the motor resolution
 
   int uRight = solvePIDRight(vRight, right);
   rightFwd = uRight > 0;
-  digitalWrite(rightMotorDir, rightFwd);
+  digitalWrite(rightMotorDir, !rightFwd);
   ledcWrite(rightMotorPWM, map(abs(uRight), 0, 100, 0, MOTOR_RES));
 }
 
 void Robot::fullSend(int left, int right) {
   leftFwd = left > 0;      // Set the variable that will control the positive or negative increment of the encoders
-  digitalWrite(leftMotorDir, leftFwd);    // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
+  digitalWrite(leftMotorDir, !leftFwd);    // The inverters set the necessary voltages for the H-bridge, so only one pin is needed
   ledcWrite(leftMotorPWM, map(abs(left), 0, 100, 0, MOTOR_RES));   // Map the duty cycle percentage to the motor resolution
 
   rightFwd = right > 0;
-  digitalWrite(rightMotorDir, rightFwd);
+  digitalWrite(rightMotorDir, !rightFwd);
   ledcWrite(rightMotorPWM, map(abs(right), 0, 100, 0, MOTOR_RES));
 }
 

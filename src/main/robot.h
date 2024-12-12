@@ -11,7 +11,7 @@
 #define MOTOR_RES_BITS 12
 #define MOTOR_RES ((1 << MOTOR_RES_BITS) - 1)
 #define MOTOR_FREQ 100
-#define FRAME_RATE 40
+#define FRAME_RATE 50
 
 // SDA and SCL pins for I2C
 #define SDA_PIN 41
@@ -52,7 +52,7 @@ class Robot {
     int solvePIDLeft(int current, int setpoint);
     int solvePIDRight(int current, int setpoint);
 
-    uint16_t getDistance(Adafruit_VL53L0X tof);
+    int getDistance(Adafruit_VL53L0X &tof);
 
     void setupMotors();
     void setupEncoders();
@@ -83,9 +83,9 @@ class Robot {
     }
     Pose getPose();
 
-    uint16_t getLeftDistance() { getDistance(leftIR); }
-    uint16_t getRightDistance() { getDistance(rightIR); }
-    uint16_t getFrontDistance() { getDistance(frontIR); }
+    int getLeftDistance();
+    int getRightDistance();
+    int getFrontDistance();
     
     void drive(int left, int right);
     void fullSend(int left, int right);

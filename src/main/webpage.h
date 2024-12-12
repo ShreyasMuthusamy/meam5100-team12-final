@@ -65,6 +65,51 @@ const char body[] PROGMEM = R"===(
       </div>
     </body>
     <script>
+      let teleop = false;
+      let moving = false;
+      let stopped = false;
+
+      document.addEventListener("keydown", handleKeyDown);
+      document.addEventListener("keyup", handleKeyUp);
+
+      function handleKeyDown(e) {
+        if (e.key == "1") {
+          handleCommand('autoAttackLeft');
+        } else if (e.key == "2") {
+          handleCommand('autoAttackCenter');
+        } else if (e.key == "3") {
+          handleCommand('autoAttackRight');
+        } else if (e.key == "4") {
+          handleCommand('fullAutoAttack');
+        } else if (e.key == "f") {
+          handleCommand('wallFollow');
+        } else if (e.key == "t") {
+          handleCommand('teleop');
+        } else if (e.key == " ") {
+          handleCommand('stop');
+        }
+
+        if (teleop && !moving) {
+          if (e.key == "w") {
+            sendControl('front');
+          } else if (e.key == "a") {
+            sendControl('left');
+          } else if (e.key == "s") {
+            sendControl('back');
+          } else if (e.key == "d") {
+            sendControl('right');
+          } else if (e.key == "q") {
+            sendControl('attack');
+          }
+        }
+      }
+
+      function handleKeyUp(e) {
+        if (teleop && moving) {
+          sendControl('stop');
+        }
+      }
+
       function clearButtons() {
         const buttons = document.getElementsByClassName("taskButtons");
         for (var i = 0; i < buttons.length; i++) {
@@ -73,7 +118,16 @@ const char body[] PROGMEM = R"===(
       }
 
       function handleCommand(command) {
-        if (!document.getElementById(command.concat("Button")).classList.contains("active")) {
+        if (!document.getElementById(command.concat("Button")).classList.contains("active") && !stopped) {
+          if (command === 'teleop') {
+            teleop = true;
+          } else {
+            teleop = false;
+            if (command === 'stopped') {
+              stopped = true;
+            }
+          }
+
           clearButtons();
           document.getElementById(command.concat("Button")).classList.add("active");
           sendCommand(command);
@@ -83,6 +137,19 @@ const char body[] PROGMEM = R"===(
       function sendCommand(command) {
         var xhttp = new XMLHttpRequest();
         var req = "command=".concat(command);
+        xhttp.open("GET", req, true);
+        xhttp.send();
+      }
+
+      function sendControl(control) {
+        if (control === 'stop') {
+          moving = false;
+        } else if (control !== 'attack') {
+          moving = true;
+        }
+        
+        var xhttp = new XMLHttpRequest();
+        var req = "control=".concat(control);
         xhttp.open("GET", req, true);
         xhttp.send();
       }
