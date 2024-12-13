@@ -62,6 +62,9 @@ void Robot::setupSensors() {
     while(1);
   }
 
+  leftVive.begin();
+  rightVive.begin();
+
   Serial.println("Setup sensors (let's gooooo)");
 }
 
@@ -136,6 +139,28 @@ void Robot::update() {
 
   prevLeftEncoderCounts = leftEncoderCounts;
   prevRightEncoderCounts = rightEncoderCounts;
+
+  static int leftX, leftY, rightX, rightY;
+  Pose currPose;
+
+  if (leftVive.status() == VIVE_RECEIVING) {
+    leftX += (leftVive.xCoord() - leftX) / 20;
+    leftY += (leftVive.yCoord() - leftY) / 20;
+  } else {
+    leftVive.sync(5);
+  }
+
+  if (rightVive.status() == VIVE_RECEIVING) {
+    rightX += (rightVive.xCoord() - rightX) / 20;
+    rightY += (rightVive.yCoord() - rightY) / 20;
+  } else {
+    rightVive.sync(5);
+  }
+
+  currPose.x = (leftX + rightX) / 2.0;
+  currPose.y = (leftY + rightY) / 2.0;
+  currPose.theta = atan2(rightY - leftY, rightX - leftX);
+  Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 }
 
 int Robot::getLeftDistance() {

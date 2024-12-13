@@ -107,34 +107,15 @@ void loop() {
   static unsigned long millisLast = millis();
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
-    // robot.update();
+    robot.update();
     // handler.run();
     // Serial.printf("Distance (LFR): %d, %d, %d\n", robot.getLeftDistance(), robot.getFrontDistance(), robot.getRightDistance());
+  }
 
-    static int leftX, leftY, rightX, rightY;
-    Pose currPose;
-
-    if (leftVive.status() == VIVE_RECEIVING) {
-      leftX += (leftVive.xCoord() - leftX) / 4;
-      leftY += (leftVive.yCoord() - leftY) / 4;
-      Serial.println("Left seen");
-    } else {
-      leftVive.sync(5);
-    }
-
-    if (rightVive.status() == VIVE_RECEIVING) {
-      rightX += (rightVive.xCoord() - rightX) / 4;
-      rightY += (rightVive.yCoord() - rightY) / 4;
-      Serial.println("Right seen");
-    } else {
-      rightVive.sync(5);
-    }
-
-    currPose.x = (leftX + rightX) / 2.0;
-    currPose.y = (leftY + rightY) / 2.0;
-    currPose.theta = atan2(rightY - leftY, rightX - leftX);
-
-    // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
+  static unsigned long millisLastTH = millis();
+  if (millis() - millisLastTH > 500) {
+    millisLastTH = millis();
+    // I2C to and from top hat
   }
   // server.serve();
 }
