@@ -138,8 +138,8 @@ void Robot::update() {
   prevLeftEncoderCounts = leftEncoderCounts;
   prevRightEncoderCounts = rightEncoderCounts;
 
-  static int leftX, leftY, rightX, rightY, theta;
-  Pose currPose;
+  static int leftX, leftY, rightX, rightY;
+  static float theta;
 
   if (leftVive.status() == VIVE_RECEIVING) {
     leftX += (leftVive.xCoord() - leftX) / 20;
@@ -159,25 +159,20 @@ void Robot::update() {
   currPose.y = (leftY + rightY) / 2.0;
   theta += (atan2(rightY - leftY, rightX - leftX) - theta) / 20;
   currPose.theta = theta;
-  Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
-}
+  // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 
-int Robot::getLeftDistance() {
-  static float reading = 0;
-  reading += (getDistance(leftIR) - reading) / 4;
-  return reading;
-}
-
-int Robot::getFrontDistance() {
-  static float reading = 0;
-  reading += (getDistance(frontIR) - reading) / 4;
-  return reading;
-}
-
-int Robot::getRightDistance() {
-  static float reading = 0;
-  reading += (getDistance(rightIR) - reading) / 4;
-  return reading;
+  if (getDistance(leftIR) >= 20) {
+    leftReading += (getDistance(leftIR) - leftReading) / 3;
+    delay(1);
+  }
+  if (getDistance(frontIR) >= 20) {
+    frontReading += (getDistance(frontIR) - frontReading) / 3;
+    delay(1);
+  }
+  if (getDistance(rightIR) >= 20) {
+    rightReading += (getDistance(rightIR) - rightReading) / 3;
+    delay(1);
+  }
 }
 
 void Robot::drive(int left, int right) {
@@ -213,4 +208,8 @@ void Robot::attack() {
   }
   
   servoOut = !servoOut;
+}
+
+void Robot::getDeadReckon() {
+  static int 
 }

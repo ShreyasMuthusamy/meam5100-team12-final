@@ -33,6 +33,7 @@ class Robot {
     Adafruit_VL53L0X rightIR = Adafruit_VL53L0X();
 
     long leftEncoderCounts, rightEncoderCounts;
+    int leftReading, frontReading, rightReading;
     int servoAngle = 0;
     bool leftFwd, rightFwd;
     bool servoOut = false;
@@ -80,10 +81,11 @@ class Robot {
       kPR = newKPR, kIR = newKIR; kDR = newKDR;
     }
     Pose getPose() { return currPose; }
+    Pose getDeadReckon();
 
-    int getLeftDistance();
-    int getRightDistance();
-    int getFrontDistance();
+    int getLeftDistance() { return leftReading; }
+    int getRightDistance() { return rightReading; }
+    int getFrontDistance() { return frontReading; }
     int getAngle() { return leftEncoderCounts - rightEncoderCounts; }
     
     void clearEncoders() { leftEncoderCounts = 0; rightEncoderCounts = 0; }

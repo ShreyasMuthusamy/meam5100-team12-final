@@ -11,8 +11,8 @@
 #define MOTOR_R_DIR 6
 #define ENC_L_A 12
 #define ENC_L_B 13
-#define ENC_R_A 10
-#define ENC_R_B 11
+#define ENC_R_A 11
+#define ENC_R_B 10
 #define IR_L_SHUT 39
 #define IR_F_SHUT 38
 #define IR_R_SHUT 37
@@ -27,10 +27,10 @@
 #define IR_R_ADDR 0x32
 
 // Define PID values
-#define KL 6, 0.2, 0.1
-#define KR 6, 0.3, 0.1
+#define KL 0.5, 0.01, 0.001
+#define KR 0.5, 0.01, 0.001
 
-// SDA and SCL pins for I2C
+// SDA and SCL 5ins for I2C
 #define SDA_PIN 40
 #define SCL_PIN 41
 
@@ -57,12 +57,6 @@ void send_I2C_byte(uint8_t data) {
   Wire.beginTransmission(TOPHAT_ADDR);
   Wire.write(data);  // Send some test data
   uint8_t error = Wire.endTransmission();
-
-  if (error == 0) {
-    Serial.println("Data sent successfully");
-  } else {
-    Serial.printf("Error sending data: %d\n", error);
-  }
 }
 
 uint8_t receive_I2C_byte() {  // data should have space declared from caller
@@ -71,10 +65,8 @@ uint8_t receive_I2C_byte() {  // data should have space declared from caller
   uint8_t byteIn = 0;
 
   if (bytesReceived > 0) {
-    Serial.print("Received from slave: ");
     while (Wire.available()) {
       byteIn = Wire.read();
-      Serial.printf("0x%02X ", byteIn);
     }
     Serial.println();
   } else return 0;
@@ -141,6 +133,9 @@ void setup() {
 
   robot.init();
   robot.setPID(KL, KR);
+
+  String commandToSet = "wallFollow";
+  handler.setCommand(commandToSet);
 }
 
 void loop() {
@@ -148,7 +143,7 @@ void loop() {
   static unsigned long millisLast = millis();
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
-    if (health > 0) {
+    if (health > 0 || 1) {
       robot.update();
       handler.run();
     } else {
@@ -165,7 +160,6 @@ void loop() {
     send_I2C_byte(packet_count);
     packet_count = 0;
     health = receive_I2C_byte();
-    Serial.println(health);
   }
   server.serve();
 }
