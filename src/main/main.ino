@@ -5,23 +5,24 @@
 #include "webpage.h"
 
 // Define the pins corresponding to the motors and encoders
-#define MOTOR_L_PWM 6
-#define MOTOR_L_DIR 4
-#define MOTOR_R_PWM 7
-#define MOTOR_R_DIR 5
-#define ENC_L_A 8
-#define ENC_L_B 3
-#define ENC_R_A 17
-#define ENC_R_B 16
+#define MOTOR_L_PWM 5
+#define MOTOR_L_DIR 7
+#define MOTOR_R_PWM 4
+#define MOTOR_R_DIR 6
+#define ENC_L_A 12
+#define ENC_L_B 13
+#define ENC_R_A 10
+#define ENC_R_B 11
 #define IR_L_ADD 0x30
 #define IR_F_ADD 0x31
 #define IR_R_ADD 0x32
-#define IR_L_SHUT 40
+#define IR_L_SHUT 39
 #define IR_F_SHUT 38
-#define IR_R_SHUT 39
-#define VIVE_L_PIN 12
-#define VIVE_R_PIN 13
-#define SERVO_PIN 21
+#define IR_R_SHUT 37
+#define VIVE_L_PIN 1
+#define VIVE_R_PIN 2
+
+#define SERVO_PIN 8
 
 // Define PID values
 #define KL 6, 0.2, 0.1
@@ -34,6 +35,11 @@ Robot robot(
   IR_L_SHUT, IR_F_SHUT, IR_R_SHUT,
   VIVE_L_PIN, VIVE_R_PIN, SERVO_PIN
 );
+
+CommandHandler handler(&robot);
+
+Vive510 leftVive(VIVE_L_PIN);
+Vive510 rightVive(VIVE_R_PIN);
 
 ///////////////////////////////////////////
 // WiFi Methods
@@ -55,17 +61,17 @@ void handleRoot() {
 void handleCommand() {
   // Get the command from the web server and schedule it
   String command = server.getText();
-  // setCommand(command);
+  handler.setCommand(command);
   server.sendplain("");
 }
 
 // Command handler
 void handleControl() {
-  // if (getCommand() == "teleop") {
-  //   // Get the command from the web server and schedule it
-  //   String control = server.getText();
-  //   setControl(control);
-  // }
+  if (handler.getCommand() == "teleop") {
+    // Get the command from the web server and schedule it
+    String control = server.getText();
+    handler.setControl(control);
+  }
   server.sendplain("");
 }
 
@@ -91,6 +97,9 @@ void setup() {
 
   robot.init();
   robot.setPID(KL, KR);
+
+  String initialCommand = "followWall";
+  handler.setCommand(initialCommand);
 }
 
 void loop() {
@@ -98,30 +107,34 @@ void loop() {
   static unsigned long millisLast = millis();
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
-    robot.update();
-    // robot.fullSend(-20, -20);
+    // robot.update();
+    // handler.run();
+    // Serial.printf("Distance (LFR): %d, %d, %d\n", robot.getLeftDistance(), robot.getFrontDistance(), robot.getRightDistance());
 
+    static int leftX, leftY, rightX, rightY;
+    Pose currPose;
 
-    int vAvg = 20;
-    float yd = 10;
-  	float kSide = 0.2;
-    float kQ = 0.01;
-    int sgn = -1;
-    float y = robot.getLeftDistance() / 10.0;
-
-    int uLeft, uRight;
-
-    if (robot.getFrontDistance() > 200) {
-      float u = kSide * sgn * (y - yd) + kQ * sgn * robot.getAngle();
-      uLeft = round(vAvg + u);
-      uRight = round(vAvg - u);
+    if (leftVive.status() == VIVE_RECEIVING) {
+      leftX += (leftVive.xCoord() - leftX) / 4;
+      leftY += (leftVive.yCoord() - leftY) / 4;
+      Serial.println("Left seen");
     } else {
-      robot.clearEncoders();
-      uLeft = 50;
-      uRight = -50;
+      leftVive.sync(5);
     }
-    robot.fullSend(uLeft, uRight);
-    Serial.printf("Distance to wall: %.2f, Attempted control: Left = %d, Right = %d\n", y, uLeft, uRight);
+
+    if (rightVive.status() == VIVE_RECEIVING) {
+      rightX += (rightVive.xCoord() - rightX) / 4;
+      rightY += (rightVive.yCoord() - rightY) / 4;
+      Serial.println("Right seen");
+    } else {
+      rightVive.sync(5);
+    }
+
+    currPose.x = (leftX + rightX) / 2.0;
+    currPose.y = (leftY + rightY) / 2.0;
+    currPose.theta = atan2(rightY - leftY, rightX - leftX);
+
+    // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
   }
   // server.serve();
 }

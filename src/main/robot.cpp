@@ -11,6 +11,7 @@ void Robot::setupMotors() {
   ledcAttach(rightMotorPWM, MOTOR_FREQ, MOTOR_RES_BITS);
   pinMode(leftMotorDir, OUTPUT);
   pinMode(rightMotorDir, OUTPUT);
+  servo.attach(servoSig);
 }
 
 // Setup the encoders with INPUT_PULLUP and to use the interrupts defined in robot.h
@@ -137,21 +138,6 @@ void Robot::update() {
   prevRightEncoderCounts = rightEncoderCounts;
 }
 
-Pose Robot::getPose() {
-  static int leftX, leftY, rightX, rightY;
-
-  leftX += (leftVive.xCoord() - leftX) / 4;
-  leftY += (leftVive.yCoord() - leftY) / 4;
-  rightX += (rightVive.xCoord() - rightX) / 4;
-  rightY += (rightVive.yCoord() - rightY) / 4;
-  
-  Pose currPose;
-  currPose.x = (leftX + rightX) / 2;
-  currPose.y = (leftY + rightY) / 2;
-  currPose.theta = atan2(rightY - leftY, rightX - leftX);
-  return currPose;
-}
-
 int Robot::getLeftDistance() {
   static float reading = 0;
   reading += (getDistance(leftIR) - reading) / 4;
@@ -195,12 +181,6 @@ void Robot::fullSend(int left, int right) {
   ledcWrite(rightMotorPWM, map(abs(right), 0, 100, 0, MOTOR_RES));
 }
 
-void Robot::sweep() {
-  if (servoCW) {
-    servo.write(servoAngle++);
-    if (servoAngle >= 180) { servoCW = false; }
-  } else {
-    servo.write(servoAngle--);
-    if (servoAngle <= 0) { servoCW = true; }
-  }
+void Robot::attack() {
+  servo.write(180);
 }

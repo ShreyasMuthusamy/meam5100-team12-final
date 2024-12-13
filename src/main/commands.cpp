@@ -1,49 +1,45 @@
 #include "commands.h"
 
-void FollowWall::initialize() {
-  if (robot->getLeftDistance() < robot->getRightDistance()) {
-    wallToFollow = LEFT_WALL;
-  } else {
-    wallToFollow = RIGHT_WALL;
-  }
-}
+void CommandHandler::handleWallFollowing() {
+  int vAvg = 20;
+  float yd = 10;
+  float kSide = 0.2;
+  float kQ = 0.01;
+  int sgn = -1;
+  // float y = m_robot->getLeftDistance() / 10.0;
+  float y = 0;
 
-void FollowWall::execute() {
-  int sgn = wallToFollow ? 1 : -1;
-  float y = wallToFollow ? robot->getRightDistance() : robot->getLeftDistance();
+  int uLeft, uRight;
 
-  float u = kSide * sgn * (y - yd);
-  // if (robot->getFrontDistance() < fd) {
-  //   u += kFront * sgn * (robot->getFrontDistance() - fd);
+  // if (m_robot->getFrontDistance() > 200) {
+  //   float u = kSide * sgn * (y - yd) + kQ * sgn * m_robot->getAngle();
+  //   uLeft = round(vAvg + u);
+  //   uRight = round(vAvg - u);
+  // } else {
+  //   m_robot->clearEncoders();
+  //   uLeft = 50;
+  //   uRight = -50;
   // }
-
-  robot->drive(vAvg+u, vAvg-u);
+  m_robot->fullSend(uLeft, uRight);
+  // Serial.printf("Distance to wall: %.2f, Attempted control: Left = %d, Right = %d\n", y, uLeft, uRight);
 }
 
-void AutoAttack::initialize() {
-  Pose p3;
-  switch (target) {
-    case LEFT_TARG:
-      // TODO: Locate left target
-      break;
-    case CENTER_TARG:
-      // TODO: Locate center target
-      break;
-    case RIGHT_TARG:
-      // TODO: Locate right target
-      break;
-    default:
-      p3 = robot->getPose();
-      break;
+void CommandHandler::handleCommand(String &command) {
+  if (command == "followWall") {
+    handleWallFollowing();
+  } else if (command == "autoAttackLeft") {
+    handleAutoAttackLeft();
+  } else if (command == "autoAttackCenter") {
+    handleAutoAttackCenter();
+  } else if (command == "autoAttackRight") {
+    handleAutoAttackRight();
+  } else if (command == "teleop") {
+    handleTeleop();
+  } else {
+    m_robot->fullSend(0, 0);
   }
-
-  traj = new Trajectory(robot->getPose(), p3, 10);
 }
 
-void AutoAttack::execute() {
-  Pose currPose = robot->getPose();
-  float k = traj->getCurvature(currPose);
-
-  float u = 2 * k;
-  robot->drive(vAvg+u, vAvg-u);
+void CommandHandler::run() {
+  handleCommand(m_currCommand);
 }

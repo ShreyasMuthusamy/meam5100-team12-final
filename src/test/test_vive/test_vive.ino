@@ -1,6 +1,6 @@
 #include "vive510.h"
 
-#define VIVE_PIN 39
+#define VIVE_PIN 2
 
 Vive510 vive(VIVE_PIN);
 
@@ -18,5 +18,5 @@ void loop() {
   } else {
     vive.sync(5);
   }
-  delay(100);
+  delay(20);
 }

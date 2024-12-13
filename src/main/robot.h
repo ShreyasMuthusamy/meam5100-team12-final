@@ -14,8 +14,8 @@
 #define FRAME_RATE 50
 
 // SDA and SCL pins for I2C
-#define SDA_PIN 41
-#define SCL_PIN 42
+#define SDA_PIN 40
+#define SCL_PIN 41
 
 // Set a cap on the maximum integral error
 #define MAX_ERR_I 100
@@ -29,6 +29,7 @@ class Robot {
     int leftIRAddress, frontIRAddress, rightIRAddress;
     int leftIRShut, frontIRShut, rightIRShut;
     Servo servo;
+    int servoSig;
     Vive510 leftVive, rightVive;
 
     Adafruit_VL53L0X leftIR = Adafruit_VL53L0X();
@@ -37,7 +38,8 @@ class Robot {
 
     long leftEncoderCounts, rightEncoderCounts;
     int servoAngle = 0;
-    bool leftFwd, rightFwd, servoCW;
+    bool leftFwd, rightFwd;
+    Pose currPose;
     
     void updateLeftEncoder() { leftEncoderCounts += digitalRead(leftEncoderB) ? 1 : -1; }
     void updateRightEncoder() { rightEncoderCounts += digitalRead(rightEncoderB) ? 1 : -1; }
@@ -70,10 +72,9 @@ class Robot {
         rightMotorPWM(PWMR), rightMotorDir(DIRR), rightEncoderA(ENCRA), rightEncoderB(ENCRB),
         leftIRAddress(IRLAdd), frontIRAddress(IRFAdd), rightIRAddress(IRRAdd),
         leftIRShut(IRLShut), frontIRShut(IRFShut), rightIRShut(IRRShut),
-        leftVive(viveL), rightVive(viveR)
+        leftVive(viveL), rightVive(viveR), servoSig(servoPin)
     {
       robot = this;
-      servo.attach(servoPin);
     }
     void init();
     void update();
@@ -81,7 +82,7 @@ class Robot {
       kPL = newKPL; kIL = newKIL; kDL = newKDL;
       kPR = newKPR, kIR = newKIR; kDR = newKDR;
     }
-    Pose getPose();
+    Pose getPose() { return currPose; }
 
     int getLeftDistance();
     int getRightDistance();
@@ -91,7 +92,7 @@ class Robot {
     void clearEncoders() { leftEncoderCounts = 0; rightEncoderCounts = 0; }
     void drive(int left, int right);
     void fullSend(int left, int right);
-    void sweep();
+    void attack();
 };
 
 #endif ROBOT_H_

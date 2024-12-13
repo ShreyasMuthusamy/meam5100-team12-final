@@ -76,16 +76,25 @@ class AutoAttack : public Command {
     void stop() override { robot->drive(0, 0); }
 };
 
-String currCommand;
+class CommandHandler {
+  private:
+    String m_currCommand, m_currControl;
+    Robot* m_robot;
 
-void setCommand(String &command) {
-  currCommand = command;
-}
+  public:
+    CommandHandler(Robot* robot) : m_robot(robot) {}
+    void setCommand(String &command) { m_currCommand = command; }
+    String getCommand() { return m_currCommand; }
+    void setControl(String &control) { m_currControl = control; }
 
-String getCommand() {
-  return currCommand;
-}
+    void handleCommand(String &command);
+    void handleWallFollowing();
+    void handleAutoAttackLeft() {}
+    void handleAutoAttackCenter() {}
+    void handleAutoAttackRight() {}
+    void handleTeleop() {}
 
-void setControl(String &control) {}
+    void run();
+};
 
 #endif COMMANDS_H_
