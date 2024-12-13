@@ -92,7 +92,7 @@ class CommandHandler {
     void handleAutoAttackLeft() {}
     void handleAutoAttackCenter() {}
     void handleAutoAttackRight() {}
-    void handleTeleop() {}
+    void handleTeleop();
 
     void run();
 };

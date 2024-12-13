@@ -13,10 +13,6 @@
 #define MOTOR_FREQ 100
 #define FRAME_RATE 50
 
-// SDA and SCL pins for I2C
-#define SDA_PIN 40
-#define SCL_PIN 41
-
 // Set a cap on the maximum integral error
 #define MAX_ERR_I 100
 

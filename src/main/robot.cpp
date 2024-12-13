@@ -121,8 +121,6 @@ int Robot::getDistance(Adafruit_VL53L0X &tof) {
 
 // Initialize the robot and setup motors, encoders, and sensors
 void Robot::init() {
-  Wire.begin(SDA_PIN, SCL_PIN);
-
   setupMotors();
   setupEncoders();
   setupSensors();
@@ -160,7 +158,7 @@ void Robot::update() {
   currPose.x = (leftX + rightX) / 2.0;
   currPose.y = (leftY + rightY) / 2.0;
   currPose.theta = atan2(rightY - leftY, rightX - leftX);
-  Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
+  // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 }
 
 int Robot::getLeftDistance() {
@@ -207,5 +205,5 @@ void Robot::fullSend(int left, int right) {
 }
 
 void Robot::attack() {
-  servo.write(180);
+  servo.write(0);
 }
