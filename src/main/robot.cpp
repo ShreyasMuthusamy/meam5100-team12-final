@@ -138,7 +138,7 @@ void Robot::update() {
   prevLeftEncoderCounts = leftEncoderCounts;
   prevRightEncoderCounts = rightEncoderCounts;
 
-  static int leftX, leftY, rightX, rightY;
+  static int leftX, leftY, rightX, rightY, theta;
   Pose currPose;
 
   if (leftVive.status() == VIVE_RECEIVING) {
@@ -157,8 +157,9 @@ void Robot::update() {
 
   currPose.x = (leftX + rightX) / 2.0;
   currPose.y = (leftY + rightY) / 2.0;
-  currPose.theta = atan2(rightY - leftY, rightX - leftX);
-  // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
+  theta += (atan2(rightY - leftY, rightX - leftX) - theta) / 20;
+  currPose.theta = theta;
+  Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 }
 
 int Robot::getLeftDistance() {
@@ -205,5 +206,11 @@ void Robot::fullSend(int left, int right) {
 }
 
 void Robot::attack() {
-  servo.write(0);
+  if (servoOut) {
+    servo.write(180);
+  } else {
+    servo.write(0);
+  }
+  
+  servoOut = !servoOut;
 }

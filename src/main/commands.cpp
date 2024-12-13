@@ -24,6 +24,27 @@ void CommandHandler::handleWallFollowing() {
   // Serial.printf("Distance to wall: %.2f, Attempted control: Left = %d, Right = %d\n", y, uLeft, uRight);
 }
 
+void CommandHandler::handleAutoAttackRight() {
+  Pose waypoint; waypoint.x = 3950; waypoint.y = 2650;
+  Pose robotPose = m_robot->getPose();
+  double desiredQ = atan2(waypoint.y - robotPose.y, waypoint.x - robotPose.x);
+  double errQ = desiredQ - robotPose.theta;
+  if (errQ > PI) {
+    errQ -= 2 * PI;
+  } else if (E.errQ < -PI) {
+    errQ += 2 * PI;
+  }
+
+  if (sqrt(pow(robotPose.y - waypoint.y, 2) + pow(robotPose.x - waypoint.x, 2)) > R_THRESHOLD) {
+    double pwmDel = constrain(3*errQ, -10, 10);
+    double pwmAvg = 50;
+
+    m_robot->fullSend(round(pwmAvg-pwmDel), round(pwmAvg+pwmDel));
+  } else {
+    m_robot->fullSend(0, 0);
+  }
+}
+
 void CommandHandler::handleTeleop() {
   if (m_currControl == "front") {
     m_robot->fullSend(50, 50);
