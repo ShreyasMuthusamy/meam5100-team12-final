@@ -5,26 +5,26 @@
 #include "webpage.h"
 
 // Define the pins corresponding to the motors and encoders
-#define MOTOR_L_PWM 5
-#define MOTOR_L_DIR 7
-#define MOTOR_R_PWM 4
-#define MOTOR_R_DIR 6
-#define ENC_L_A 17
-#define ENC_L_B 16
-#define ENC_R_A 3
-#define ENC_R_B 8
+#define MOTOR_L_PWM 6
+#define MOTOR_L_DIR 4
+#define MOTOR_R_PWM 7
+#define MOTOR_R_DIR 5
+#define ENC_L_A 8
+#define ENC_L_B 3
+#define ENC_R_A 17
+#define ENC_R_B 16
 #define IR_L_ADD 0x30
 #define IR_F_ADD 0x31
 #define IR_R_ADD 0x32
-#define IR_L_SHUT 38
-#define IR_F_SHUT 39
-#define IR_R_SHUT 40
+#define IR_L_SHUT 40
+#define IR_F_SHUT 38
+#define IR_R_SHUT 39
 #define VIVE_L_PIN 12
 #define VIVE_R_PIN 13
 #define SERVO_PIN 21
 
 // Define PID values
-#define KL 5, 0.15, 0.1
+#define KL 6, 0.2, 0.1
 #define KR 6, 0.3, 0.1
 
 Robot robot(
@@ -55,17 +55,17 @@ void handleRoot() {
 void handleCommand() {
   // Get the command from the web server and schedule it
   String command = server.getText();
-  setCommand(command);
+  // setCommand(command);
   server.sendplain("");
 }
 
 // Command handler
 void handleControl() {
-  if (getCommand() == "teleop") {
-    // Get the command from the web server and schedule it
-    String control = server.getText();
-    setControl(control);
-  }
+  // if (getCommand() == "teleop") {
+  //   // Get the command from the web server and schedule it
+  //   String control = server.getText();
+  //   setControl(control);
+  // }
   server.sendplain("");
 }
 
@@ -99,20 +99,29 @@ void loop() {
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
     robot.update();
-    robot.drive(15, 15);
+    // robot.fullSend(-20, -20);
 
 
-    // int vAvg = 15;
-    // float yd = 15;
-  	// float kSide = 1;
-    // int sgn = -1;
-    // float y = robot.getLeftDistance() / 10.0;
+    int vAvg = 20;
+    float yd = 10;
+  	float kSide = 0.2;
+    float kQ = 0.01;
+    int sgn = -1;
+    float y = robot.getLeftDistance() / 10.0;
 
-    // float u = kSide * sgn * (y - yd);
-    // int uLeft = round(vAvg + u);
-    // int uRight = round(vAvg - u);
-    // robot.drive(uLeft, uRight);
-    // Serial.printf("Distance to wall: %.2f, Attempted control: Left = %d, Right = %d\n", y, uLeft, uRight);
+    int uLeft, uRight;
+
+    if (robot.getFrontDistance() > 200) {
+      float u = kSide * sgn * (y - yd) + kQ * sgn * robot.getAngle();
+      uLeft = round(vAvg + u);
+      uRight = round(vAvg - u);
+    } else {
+      robot.clearEncoders();
+      uLeft = 50;
+      uRight = -50;
+    }
+    robot.fullSend(uLeft, uRight);
+    Serial.printf("Distance to wall: %.2f, Attempted control: Left = %d, Right = %d\n", y, uLeft, uRight);
   }
   // server.serve();
 }

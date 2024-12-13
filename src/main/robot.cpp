@@ -131,7 +131,7 @@ void Robot::update() {
   vLeft = leftEncoderCounts - prevLeftEncoderCounts;
   vRight = rightEncoderCounts - prevRightEncoderCounts;
 
-  Serial.printf("Actual Velocity: %d, %d ", vLeft, vRight);
+  // Serial.printf("Actual Velocity: %d, %d\n", vLeft, vRight);
 
   prevLeftEncoderCounts = leftEncoderCounts;
   prevRightEncoderCounts = rightEncoderCounts;

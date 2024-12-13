@@ -40,7 +40,7 @@ class Robot {
     bool leftFwd, rightFwd, servoCW;
     
     void updateLeftEncoder() { leftEncoderCounts += digitalRead(leftEncoderB) ? 1 : -1; }
-    void updateRightEncoder() { rightEncoderCounts += !digitalRead(rightEncoderB) ? 1 : -1; }
+    void updateRightEncoder() { rightEncoderCounts += digitalRead(rightEncoderB) ? 1 : -1; }
 
     static void IRAM_ATTR handleLeftEncoderInterrupt();
     static void IRAM_ATTR handleRightEncoderInterrupt();
@@ -86,7 +86,9 @@ class Robot {
     int getLeftDistance();
     int getRightDistance();
     int getFrontDistance();
+    int getAngle() { return leftEncoderCounts - rightEncoderCounts; }
     
+    void clearEncoders() { leftEncoderCounts = 0; rightEncoderCounts = 0; }
     void drive(int left, int right);
     void fullSend(int left, int right);
     void sweep();
