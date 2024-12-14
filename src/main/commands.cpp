@@ -4,9 +4,9 @@ void CommandHandler::handleWallFollowing() {
   static unsigned long stateStartTime = 0;
   unsigned long currentMillis = millis();
   
-  static enum { FOLLOW_WALL, REVERSE, TURN_LEFT, TURN_RIGHT, CHECK } state = FOLLOW_WALL;
+  static enum { FOLLOW_WALL, REVERSE, TURN_LEFT1, TURN_LEFT2, TURN_LEFT3, TURN_RIGHT1, TURN_RIGHT2, TURN_RIGHT3, CHECK, AVOID_WALL } state = FOLLOW_WALL;
   // Declare variables outside switch to avoid scope issues
-  float yd = 120.0; // Desired distance to the wall
+  float yd = 60.0; // Desired distance to the wall
   float dyd = 10.0;
   int vAvg = 30;
   switch (state) {
@@ -18,62 +18,55 @@ void CommandHandler::handleWallFollowing() {
     case REVERSE:
       // Reverse logic for a brief time
       m_robot->fullSend(-vAvg, -vAvg);
-      if (currentMillis - stateStartTime >= 300) { stateStartTime = currentMillis; state = CHECK; }
+      if (currentMillis - stateStartTime >= 300) { stateStartTime = currentMillis; state = AVOID_WALL; }
       break;
-    case TURN_LEFT:
-      Serial.println(currentMillis - stateStartTime);
+    case AVOID_WALL:
       // Turn logic for a set duration
-      if (currentMillis - stateStartTime < 200) {
-        m_robot->fullSend(-vAvg, vAvg);
-      } else {
-        if (currentMillis - stateStartTime < 500) {
-          m_robot->fullSend(vAvg, vAvg);
-        } else {
-          if (currentMillis - stateStartTime < 700) {
-            m_robot->fullSend(vAvg, -vAvg);
-          } else {
-            stateStartTime = currentMillis; state = CHECK;
-          }
-        }
-      }
+      m_robot->fullSend(vAvg, -vAvg);
+      if (currentMillis - stateStartTime >= 500) { stateStartTime = currentMillis; state = CHECK; }
       break;
-    case TURN_RIGHT:
-      Serial.println(currentMillis - stateStartTime);
+    case TURN_LEFT1:
       // Turn logic for a set duration
-      if (currentMillis - stateStartTime < 200) {
-        m_robot->fullSend(vAvg, -vAvg);
-      } else {
-        if (currentMillis - stateStartTime < 500) {
-          m_robot->fullSend(vAvg, vAvg);
-        } else {
-          if (currentMillis - stateStartTime < 700) {
-            m_robot->fullSend(-vAvg, vAvg);
-          } else {
-            stateStartTime = currentMillis; state = CHECK;
-          }
-        }
-      }
+      m_robot->fullSend(-vAvg/4, vAvg/4);
+      if (currentMillis - stateStartTime >= 150) { stateStartTime = currentMillis; state = TURN_LEFT2; }
+      break;
+    case TURN_LEFT2:
+      // Turn logic for a set duration
+      m_robot->fullSend(vAvg, vAvg);
+      if (currentMillis - stateStartTime >= 200) { stateStartTime = currentMillis; state = TURN_LEFT3; }
+      break;
+    case TURN_LEFT3:
+      // Turn logic for a set duration
+      m_robot->fullSend(vAvg/4, -vAvg/4);
+      if (currentMillis - stateStartTime >= 150) { stateStartTime = currentMillis; state = CHECK; }
+      break;
+    case TURN_RIGHT1:
+      // Turn logic for a set duration
+      m_robot->fullSend(vAvg/4, -vAvg/4);
+      if (currentMillis - stateStartTime >= 200) { stateStartTime = currentMillis; state = TURN_RIGHT2; }
+      break;
+    case TURN_RIGHT2:
+      // Turn logic for a set duration
+      m_robot->fullSend(vAvg, vAvg);
+      if (currentMillis - stateStartTime >= 200) { stateStartTime = currentMillis; state = TURN_RIGHT3; }
+      break;
+    case TURN_RIGHT3:
+      // Turn logic for a set duration
+      m_robot->fullSend(-vAvg/4, vAvg/2);
+      if (currentMillis - stateStartTime >= 150) { stateStartTime = currentMillis; state = CHECK; }
       break;
     case CHECK:
       m_robot->fullSend(0, 0);
       if (currentMillis - stateStartTime >= 500) {
         stateStartTime = currentMillis;
         int f = m_robot->getFrontDistance();
-        f = m_robot->getFrontDistance();
-        f = m_robot->getFrontDistance();
-        f = m_robot->getFrontDistance();
-        f = m_robot->getFrontDistance();
-        if (f >= 10 && f <= 80) {
+        if (f >= 10 && f <= 120) {
           state = REVERSE;
         } else {
           int y = m_robot->getLeftDistance();
-          y = m_robot->getLeftDistance();
-          y = m_robot->getLeftDistance();
-          y = m_robot->getLeftDistance();
-          y = m_robot->getLeftDistance();
-          if (y > yd + dyd) { state = TURN_RIGHT; }
+          if (y > yd + dyd) { state = TURN_RIGHT1; }
           else if (y > yd - dyd && y <= yd + dyd) { state = FOLLOW_WALL; }
-          else if (y < yd - dyd) { state = TURN_LEFT; }
+          else if (y < yd - dyd) { state = TURN_LEFT1; }
         }
       }
       break;
@@ -95,31 +88,31 @@ void CommandHandler::handleAutoAttackRight() {
     // Declare variables outside switch to avoid scope issues
     float y = m_robot->getLeftDistance() / 10.0; // Distance to the wall in cm
     float yd = 10; // Desired distance to the wall
-    float kSide = 0.3;
-    float kQ = 0.8;
+    float kSide = 0.2;
+    float kQ = 0.005;
     int vAvg = 30;
     int sgn = -1;
     float u = 0; // Control effort
     int uLeft = 0, uRight = 0;
     // Front distance check
-    if (state == FOLLOW_WALL && m_robot->getFrontDistance() >= 10 && m_robot->getFrontDistance() <= 80) {
+    int f = m_robot->getFrontDistance();
+    if (state == FOLLOW_WALL && f >= 10 && f <= 120) {
       state = REVERSE;
       stateStartTime = currentMillis;
-      Serial.println("front distance: "); Serial.print(m_robot->getFrontDistance());
     }
     switch (state) {
       case FOLLOW_WALL:
         // Wall-following logic
-        u = kSide * sgn * (y - yd) - kQ * sgn * m_robot->getDeadReckon().theta;
+        u = kSide * sgn * (y - yd) - kQ * sgn * m_robot->getAngle();
         uLeft = round(vAvg + u);
         uRight = round(vAvg - u);
-        m_robot->fullSend(uLeft, uRight);
+        m_robot->fullSend(uLeft, uRight+3);
         Serial.printf("Distance from wall: %.2f\n", y);
         break;
       case REVERSE:
         // Reverse logic for a brief time
         m_robot->fullSend(-vAvg/2, -vAvg);
-        if (currentMillis - stateStartTime >= 300) {
+        if (currentMillis - stateStartTime >= 400) {
             state = TURN;
             stateStartTime = currentMillis;
         }

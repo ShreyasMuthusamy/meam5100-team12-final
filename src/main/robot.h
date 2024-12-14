@@ -11,7 +11,7 @@
 #define MOTOR_RES_BITS 12
 #define MOTOR_RES ((1 << MOTOR_RES_BITS) - 1)
 #define MOTOR_FREQ 100
-#define FRAME_RATE 50
+#define FRAME_RATE 20
 
 // Set a cap on the maximum integral error
 #define MAX_ERR_I 100

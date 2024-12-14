@@ -190,23 +190,13 @@ void Robot::update() {
   theta += (atan2(rightY - leftY, rightX - leftX) - theta) / 20;
   currPose.theta = theta;
 
-  static bool oldServo = false;
-  static long millisControl = millis();
-  if (servoOut && !oldServo) {
-    millisControl = millis();
-  }
-
-  if (servoOut && (millis() - millisControl > 1000)) {
-    servoOut = false;
-  }
-
-  oldServo = servoOut;
-
   if (servoOut) {
     servo.write(0);
   } else {
     servo.write(180);
   }
+
+  getFrontDistance();
   // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 }
 
@@ -266,9 +256,17 @@ Pose Robot::getDeadReckon() {
 }
 
 void Robot::attack() {
-  servoOut = true;
+  servoOut = !servoOut;
 }
 
-int Robot::getLeftDistance() { return getMedianRead(getDistance(leftIR), leftBuffer, leftIndex); }
-int Robot::getFrontDistance() { return getMedianRead(getDistance(frontIR), frontBuffer, frontIndex); }
-int Robot::getRightDistance() { return getMedianRead(getDistance(rightIR), rightBuffer, rightIndex); }
+int Robot::getLeftDistance() {
+  // return getMedianRead(getDistance(leftIR), leftBuffer, leftIndex);
+  return getDistance(leftIR);
+}
+int Robot::getFrontDistance() {
+  return getMedianRead(getDistance(frontIR), frontBuffer, frontIndex);
+}
+int Robot::getRightDistance() {
+  // return getMedianRead(getDistance(rightIR), rightBuffer, rightIndex);
+  return getDistance(rightIR);
+}

@@ -111,7 +111,7 @@ void handleControl() {
 
 // Setup the software-enabled AP WiFi server
 void setupWiFi() {
-  WiFi.softAP(ssid, passwd);
+  WiFi.softAP(ssid, passwd, 3);
   Serial.print("AP IP address: HTML//");
   Serial.println(WiFi.softAPIP());
   server.begin();
@@ -134,7 +134,7 @@ void setup() {
   robot.init();
   robot.setPID(KL, KR);
 
-  String commandToSet = "wallFollow";
+  String commandToSet = "autoAttackRight";
   handler.setCommand(commandToSet);
 }
 
