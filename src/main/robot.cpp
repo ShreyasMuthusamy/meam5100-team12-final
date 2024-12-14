@@ -162,15 +162,18 @@ void Robot::update() {
   // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 
   if (getDistance(leftIR) >= 20) {
-    leftReading += (getDistance(leftIR) - leftReading) / 2;
+    leftReading = getDistance(leftIR);
+    // leftReading += (getDistance(leftIR) - leftReading) / 2;
     delay(1);
   }
   if (getDistance(frontIR) >= 20) {
-    frontReading += (getDistance(frontIR) - frontReading) / 2;
+    frontReading = getDistance(frontIR);
+    // frontReading += (getDistance(frontIR) - frontReading) / 2;
     delay(1);
   }
   if (getDistance(rightIR) >= 20) {
-    rightReading += (getDistance(rightIR) - rightReading) / 2;
+    rightReading = getDistance(rightIR);
+    // rightReading += (getDistance(rightIR) - rightReading) / 2;
     delay(1);
   }
 }
