@@ -36,7 +36,7 @@ class Robot {
     int leftReading, frontReading, rightReading;
     int servoAngle = 0;
     bool leftFwd, rightFwd;
-    bool servoOut = false;
+    bool attackMode = false;
     Pose currPose;
     
     void updateLeftEncoder() { leftEncoderCounts += digitalRead(leftEncoderB) ? 1 : -1; }

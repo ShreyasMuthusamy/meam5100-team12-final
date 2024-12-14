@@ -162,15 +162,15 @@ void Robot::update() {
   // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 
   if (getDistance(leftIR) >= 20) {
-    leftReading += (getDistance(leftIR) - leftReading) / 3;
+    leftReading += (getDistance(leftIR) - leftReading) / 2;
     delay(1);
   }
   if (getDistance(frontIR) >= 20) {
-    frontReading += (getDistance(frontIR) - frontReading) / 3;
+    frontReading += (getDistance(frontIR) - frontReading) / 2;
     delay(1);
   }
   if (getDistance(rightIR) >= 20) {
-    rightReading += (getDistance(rightIR) - rightReading) / 3;
+    rightReading += (getDistance(rightIR) - rightReading) / 2;
     delay(1);
   }
 }
@@ -200,16 +200,37 @@ void Robot::fullSend(int left, int right) {
   ledcWrite(rightMotorPWM, map(abs(right), 0, 100, 0, MOTOR_RES));
 }
 
-void Robot::attack() {
-  if (servoOut) {
-    servo.write(180);
-  } else {
-    servo.write(0);
+Pose Robot::getDeadReckon() {
+  static float Xhat, Yhat, Qhat;
+
+  // Assuming 12 counts per rev and 1.5" wheel radius
+  float countsPerRev = 12;
+  float wheelRadius = 1.5;
+  float wheelBase = 8.5;
+
+  double vLeft = (leftEncoderCounts / countsPerRev * (2 * PI) * wheelRadius) * FRAME_RATE;
+  double vRight = (rightEncoderCounts / countsPerRev * (2 * PI) * wheelRadius) * FRAME_RATE;
+  clearEncoders();
+
+  double vAvg = (vLeft + vRight) / 2;
+  double vDel = vRight - vLeft;
+
+  Xhat += vAvg * cos(Qhat) / FRAME_RATE;
+  Yhat += vAvg * sin(Qhat) / FRAME_RATE;
+  Qhat += vDel / (wheelBase * FRAME_RATE);
+  double QhatNorm = Qhat - 2 * PI * (int) (Qhat / (2 * PI));
+  if (QhatNorm > PI) {
+    QhatNorm = QhatNorm - 2 * PI;
   }
-  
-  servoOut = !servoOut;
+
+  Pose measuredP;
+  measuredP.x = Xhat;
+  measuredP.y = Yhat;
+  measuredP.theta = QhatNorm;
+  return measuredP;
 }
 
-void Robot::getDeadReckon() {
-  static int 
+void Robot::attack() {
+  servoAngle = (servoAngle == 0) ? 180 : 0;
+  servo.write(servoAngle);
 }

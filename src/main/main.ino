@@ -145,13 +145,17 @@ void loop() {
     millisLast = millis();
     if (health > 0 || 1) {
       robot.update();
-      handler.run();
     } else {
-      String commandToSet = "stop";
-      handler.setCommand(commandToSet);
       robot.fullSend(0, 0);
     }
     // Serial.printf("Distance (LFR): %d, %d, %d\n", robot.getLeftDistance(), robot.getFrontDistance(), robot.getRightDistance());
+  }
+
+  if (health > 0 || 1) {
+    handler.run();
+  } else {
+    String commandToSet = "stop";
+    handler.setCommand(commandToSet);
   }
 
   static unsigned long millisLastTH = millis();
