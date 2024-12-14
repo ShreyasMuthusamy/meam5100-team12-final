@@ -15,6 +15,7 @@
 
 // Set a cap on the maximum integral error
 #define MAX_ERR_I 100
+#define medianFilterSize 5
 
 class Robot {
   private:
@@ -34,10 +35,18 @@ class Robot {
 
     long leftEncoderCounts, rightEncoderCounts;
     int leftReading, frontReading, rightReading;
-    int servoAngle = 0;
     bool leftFwd, rightFwd;
-    bool attackMode = false;
+    bool servoOut = false;
     Pose currPose;
+
+    //for median filters:
+    // Define the buffer size for the median filter
+    int leftBuffer[medianFilterSize] = {0};
+    int frontBuffer[medianFilterSize] = {0};
+    int rightBuffer[medianFilterSize] = {0};
+    int leftIndex = 0;
+    int frontIndex = 0;
+    int rightIndex = 0;
     
     void updateLeftEncoder() { leftEncoderCounts += digitalRead(leftEncoderB) ? 1 : -1; }
     void updateRightEncoder() { rightEncoderCounts += digitalRead(rightEncoderB) ? 1 : -1; }
@@ -83,9 +92,9 @@ class Robot {
     Pose getPose() { return currPose; }
     Pose getDeadReckon();
 
-    int getLeftDistance() { return leftReading; }
-    int getRightDistance() { return rightReading; }
-    int getFrontDistance() { return frontReading; }
+    int getLeftDistance();
+    int getFrontDistance();
+    int getRightDistance();
     int getAngle() { return leftEncoderCounts - rightEncoderCounts; }
     
     void clearEncoders() { leftEncoderCounts = 0; rightEncoderCounts = 0; }

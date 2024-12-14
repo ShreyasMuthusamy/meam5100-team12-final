@@ -144,7 +144,9 @@ void loop() {
   if (millis() - millisLast > 1000 / FRAME_RATE) {
     millisLast = millis();
     if (health > 0 || 1) {
+      long currMillis = millis();
       robot.update();
+      Serial.printf("Robot update time: %d\n", millis() - currMillis);
     } else {
       robot.fullSend(0, 0);
     }

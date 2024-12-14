@@ -59,10 +59,18 @@ void CommandHandler::handleWallFollowing() {
       if (currentMillis - stateStartTime >= 500) {
         stateStartTime = currentMillis;
         int f = m_robot->getFrontDistance();
+        f = m_robot->getFrontDistance();
+        f = m_robot->getFrontDistance();
+        f = m_robot->getFrontDistance();
+        f = m_robot->getFrontDistance();
         if (f >= 10 && f <= 80) {
           state = REVERSE;
         } else {
           int y = m_robot->getLeftDistance();
+          y = m_robot->getLeftDistance();
+          y = m_robot->getLeftDistance();
+          y = m_robot->getLeftDistance();
+          y = m_robot->getLeftDistance();
           if (y > yd + dyd) { state = TURN_RIGHT; }
           else if (y > yd - dyd && y <= yd + dyd) { state = FOLLOW_WALL; }
           else if (y < yd - dyd) { state = TURN_LEFT; }

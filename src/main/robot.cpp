@@ -1,5 +1,35 @@
 #include "robot.h"
 
+int computeMedian(int *buffer, int size) {
+  int sorted[medianFilterSize];
+  // Copy buffer into sorted array
+  for (int i = 0; i < size; i++) {
+    sorted[i] = buffer[i];
+  }
+  // Simple bubble sort (suitable for small arrays)
+  for (int i = 0; i < size - 1; i++) {
+    for (int j = 0; j < size - i - 1; j++) {
+      if (sorted[j] > sorted[j + 1]) {
+        // Swap elements
+        int temp = sorted[j];
+        sorted[j] = sorted[j + 1];
+        sorted[j + 1] = temp;
+      }
+    }
+  }
+  // Return median value
+  return sorted[size / 2];
+}
+
+// General function to get a median reading for a sensor
+int getMedianRead(int currentReading, int *buffer, int &index) {
+  // Add the new reading to the buffer
+  buffer[index] = currentReading;
+  index = (index + 1) % medianFilterSize;
+  // Compute and return the median
+  return computeMedian(buffer, medianFilterSize);
+}
+
 // Need this code for interrupts to work in OOP setting
 Robot* Robot::robot = nullptr;
 void IRAM_ATTR Robot::handleLeftEncoderInterrupt() { if (robot) { robot->updateLeftEncoder(); } }
@@ -47,6 +77,7 @@ void Robot::setupSensors() {
     Serial.println(F("Failed to boot left VL53L0X"));
     while(1);
   }
+  leftIR.setMeasurementTimingBudgetMicroSeconds(20000);
   delay(10);
 
   digitalWrite(frontIRShut, HIGH);
@@ -54,6 +85,7 @@ void Robot::setupSensors() {
     Serial.println(F("Failed to boot front VL53L0X"));
     while(1);
   }
+  frontIR.setMeasurementTimingBudgetMicroSeconds(20000);
   delay(10);
 
   digitalWrite(rightIRShut, HIGH);
@@ -61,6 +93,8 @@ void Robot::setupSensors() {
     Serial.println(F("Failed to boot right VL53L0X"));
     while(1);
   }
+  rightIR.setMeasurementTimingBudgetMicroSeconds(20000);
+  delay(10);
 
   leftVive.begin();
   rightVive.begin();
@@ -144,38 +178,36 @@ void Robot::update() {
   if (leftVive.status() == VIVE_RECEIVING) {
     leftX += (leftVive.xCoord() - leftX) / 20;
     leftY += (leftVive.yCoord() - leftY) / 20;
-  } else {
-    leftVive.sync(5);
   }
 
   if (rightVive.status() == VIVE_RECEIVING) {
     rightX += (rightVive.xCoord() - rightX) / 20;
     rightY += (rightVive.yCoord() - rightY) / 20;
-  } else {
-    rightVive.sync(5);
   }
 
   currPose.x = (leftX + rightX) / 2.0;
   currPose.y = (leftY + rightY) / 2.0;
   theta += (atan2(rightY - leftY, rightX - leftX) - theta) / 20;
   currPose.theta = theta;
-  // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 
-  if (getDistance(leftIR) >= 20) {
-    leftReading = getDistance(leftIR);
-    // leftReading += (getDistance(leftIR) - leftReading) / 2;
-    delay(1);
+  static bool oldServo = false;
+  static long millisControl = millis();
+  if (servoOut && !oldServo) {
+    millisControl = millis();
   }
-  if (getDistance(frontIR) >= 20) {
-    frontReading = getDistance(frontIR);
-    // frontReading += (getDistance(frontIR) - frontReading) / 2;
-    delay(1);
+
+  if (servoOut && (millis() - millisControl > 1000)) {
+    servoOut = false;
   }
-  if (getDistance(rightIR) >= 20) {
-    rightReading = getDistance(rightIR);
-    // rightReading += (getDistance(rightIR) - rightReading) / 2;
-    delay(1);
+
+  oldServo = servoOut;
+
+  if (servoOut) {
+    servo.write(0);
+  } else {
+    servo.write(180);
   }
+  // Serial.printf("Left Coords: (%d, %d), Right Coords: (%d, %d), Pose: (%.1f, %.1f, %.1f)\n", leftX, leftY, rightX, rightY, currPose.x, currPose.y, currPose.theta);
 }
 
 void Robot::drive(int left, int right) {
@@ -234,6 +266,9 @@ Pose Robot::getDeadReckon() {
 }
 
 void Robot::attack() {
-  servoAngle = (servoAngle == 0) ? 180 : 0;
-  servo.write(servoAngle);
+  servoOut = true;
 }
+
+int Robot::getLeftDistance() { return getMedianRead(getDistance(leftIR), leftBuffer, leftIndex); }
+int Robot::getFrontDistance() { return getMedianRead(getDistance(frontIR), frontBuffer, frontIndex); }
+int Robot::getRightDistance() { return getMedianRead(getDistance(rightIR), rightBuffer, rightIndex); }
